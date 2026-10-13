@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#EAE7FF"/><stop offset=".52" stop-color="#FFE5EE"/><stop offset="1" stop-color="#DCEBFF"/></linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#A8DBE9"/><stop offset="1" stop-color="#6DB9C8"/></linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#F9E4CC"/><stop offset="1" stop-color="#F4CDBD"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1440v900H0z"/>
+  <circle cx="1140" cy="170" r="76" fill="#FFE6A5" opacity=".85"/>
+  <path fill="#C9C5EA" d="m0 506 222-242 205 219 196-184 258 225v196H0z" opacity=".72"/>
+  <path fill="#A9C7DC" d="m0 539 274-193 202 217 247-202 246 220v130H0z" opacity=".85"/>
+  <path fill="url(#sea)" d="M0 518c225-25 428 13 648-7 259-23 505 25 792-5v394H0z"/>
+  <path fill="#D9F1EE" d="M0 588c210-19 442 28 677 3 268-29 463 19 763-9v42c-300 29-494-18-759 10-238 25-462-22-681-2z" opacity=".88"/>
+  <path fill="url(#sand)" d="M0 662c252-64 473-13 688 29 255 50 441 32 752-54v263H0z"/>
+  <path stroke="#FFF" stroke-width="8" stroke-linecap="round" d="M184 694c61-17 118-16 177-7m-81 38c54-12 89-10 142 4m690-55c58-12 110-9 157 2" opacity=".6"/>
+  <path d="M107 629c3-135 24-231 57-314" stroke="#956451" stroke-width="23" stroke-linecap="round"/>
+  <path d="M164 325c-66-96-141-95-139-67 58 0 95 27 139 67Zm7-6c4-100 75-149 87-123-47 28-69 63-87 123Zm-9 1c-25-99-99-126-105-99 51 16 81 45 105 99Zm18 4c43-92 125-107 126-78-56 8-91 31-126 78Z" fill="#6B9A76" stroke="#5C8A69" stroke-width="4" stroke-linejoin="round"/>
+  <g transform="translate(892 550) rotate(-3)">
+    <path d="M0 0h340v46H0z" fill="#C98862" stroke="#9D664C" stroke-width="6" rx="9"/>
+    <path d="M24 46v194m292-194v194" stroke="#9D664C" stroke-width="17" stroke-linecap="round"/>
+    <path d="M26 72h220v50H26z" fill="#85B881"/><text x="45" y="105" fill="#fff" font-family="sans-serif" font-size="23" font-weight="700" letter-spacing="3">EXPLORE</text>
+    <path d="M99 128h215v50H99z" fill="#EEAA6E"/><text x="121" y="161" fill="#fff" font-family="sans-serif" font-size="23" font-weight="700" letter-spacing="3">DREAM</text>
+    <path d="M26 184h239v50H26z" fill="#E891A8"/><text x="46" y="217" fill="#fff" font-family="sans-serif" font-size="22" font-weight="700" letter-spacing="2">DISCOVER</text>
+    <path d="M84 240h230v50H84z" fill="#E5B760"/><text x="103" y="273" fill="#fff" font-family="sans-serif" font-size="20" font-weight="700" letter-spacing="2">TOGETHER</text>
+  </g>
+  <g transform="translate(555 666) rotate(-12)">
+    <rect x="0" y="0" width="194" height="172" rx="30" fill="#EC89A6" stroke="#D87394" stroke-width="9"/>
+    <path d="M63 4V-18c0-30 68-30 68 0V4" stroke="#D87394" stroke-width="12" fill="none"/>
+    <path d="M31 44h132M31 114h132M54 15v145m86-145v145" stroke="#F7B7C8" stroke-width="6" opacity=".8"/>
+    <circle cx="154" cy="22" r="10" fill="#FFE6A5"/>
+  </g>
+  <g fill="#fff" opacity=".7"><path d="M324 141c26-29 68-12 67 15 35-11 55 14 43 33H300c-12-18 1-41 24-48Z"/><path d="M758 237c20-22 53-10 52 11 27-8 41 11 32 26H740c-9-13 0-30 18-37Z"/></g>
+</svg>
