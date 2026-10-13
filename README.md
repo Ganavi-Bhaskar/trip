@@ -67,6 +67,19 @@ docs/         Project documentation and visual references
    Client: <http://localhost:5173>  
    API: <http://localhost:5000/api>
 
+## Deploy to Vercel
+
+TripSplit can be deployed as one Vercel project: Vite serves the client, and the Express API runs as a Vercel Function. Import this repository with the project root set to the repository root. The included `vercel.json` builds the workspaces and publishes `client/dist`.
+
+Before using the deployment:
+
+1. Use a hosted MongoDB deployment such as MongoDB Atlas; a local MongoDB URL is not reachable from Vercel.
+2. Add `MONGO_URI`, `JWT_SECRET` (at least 32 characters), and `CLIENT_URL` (the deployed app origin) as Vercel environment variables for Production and Preview. Keep these values private and never commit them.
+3. Create a Vercel Blob store and connect it to the Vercel project. The serverless API uses Blob for persistent uploaded images; local development continues to use the local storage provider.
+4. Deploy. In production, the client defaults to the same-origin `/api` endpoint.
+
+The API opens and reuses a MongoDB connection when handling function requests. Vercel's local function filesystem is temporary, so do not use local uploads for deployed user content.
+
 ## Environment
 
 `server/.env`:

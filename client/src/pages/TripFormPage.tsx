@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, CalendarDays, Check, Copy, ImagePlus, MapPin, Share2, Trash2, Upload, X } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, Copy, ImagePlus, MapPin, Share2, Trash2, Upload } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
