@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "travelers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trip", "order": "ASCENDING" },
+        { "fieldPath": "user", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "travelers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trip", "order": "ASCENDING" },
+        { "fieldPath": "role", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "expenses",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trip", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trip", "order": "ASCENDING" },
+        { "fieldPath": "day", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

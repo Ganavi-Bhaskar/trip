@@ -3,7 +3,6 @@ import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.hoisted(() => {
-  process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/tripsplit-test'
   process.env.JWT_SECRET = 'test-secret-that-is-long-enough-for-jwt-validation'
   process.env.CLIENT_URL = 'http://localhost:5173'
 })

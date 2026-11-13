@@ -29,3 +29,23 @@ server/uploads/**
 *.njsproj
 *.sln
 *.sw?
+backups/
+
+# Local credentials and private keys
+*service-account*.json
+*firebase-adminsdk*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local uploads, temporary files, and database dumps
+/uploads/
+*.tmp
+*.temp
+*.bak
+*.bson
+*.bson.gz
+*.dump
+*.dump.gz
+*.sql.gz

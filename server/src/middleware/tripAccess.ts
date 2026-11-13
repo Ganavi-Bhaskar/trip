@@ -1,13 +1,13 @@
 import type { RequestHandler } from 'express'
-import { Membership } from '../models/Membership'
+import { membershipFor } from '../utils/firestore'
 import { ApiError } from '../utils/ApiError'
 import { z } from 'zod'
 
 export const tripAccess: RequestHandler = (request, _response, next) => {
   const tripId = request.params.tripId ?? request.params.id
-  if (!tripId || !request.authUserId) return next(new ApiError(400, 'A trip is required.'))
-  if (!z.string().regex(/^[a-f\d]{24}$/i).safeParse(tripId).success) return next(new ApiError(400, 'The requested trip is invalid.', { tripId: 'Invalid trip identifier.' }))
-  void Membership.findOne({ trip: tripId, user: request.authUserId }).then((membership) => {
+  if (typeof tripId !== 'string' || !request.authUserId) return next(new ApiError(400, 'A trip is required.'))
+  if (!z.string().min(1).max(128).safeParse(tripId).success) return next(new ApiError(400, 'The requested trip is invalid.', { tripId: 'Invalid trip identifier.' }))
+  void membershipFor(tripId, request.authUserId).then((membership) => {
     if (!membership) return next(new ApiError(403, 'You are not a traveler on this trip.'))
     request.tripRole = membership.role
     next()

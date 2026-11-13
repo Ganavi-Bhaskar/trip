@@ -25,8 +25,8 @@ export function validateQuery(schema: ZodType): RequestHandler {
   }
 }
 
-export function validateObjectIdParam(name: string): RequestHandler {
-  const schema = z.object({ [name]: z.string().regex(/^[a-f\d]{24}$/i, 'This identifier is invalid.') })
+export function validateDocumentIdParam(name: string): RequestHandler {
+  const schema = z.object({ [name]: z.string().min(1).max(128).refine((value) => !value.includes('/'), 'This identifier is invalid.') })
   return (request, _response, next) => {
     const result = schema.safeParse(request.params)
     if (!result.success) {

@@ -10,7 +10,8 @@
     "dev": "concurrently -k -n api,web \"npm run dev -w server\" \"npm run dev -w client\"",
     "seed": "npm run seed -w server",
     "build": "npm run build -w server && npm run build -w client",
-    "test": "npm run test -w server && npm run test -w client"
+    "test": "npm run test -w server && npm run test -w client",
+    "migrate:mongodb": "npm run migrate:mongodb -w server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import * as expenseController from '../controllers/expenseController'
 import { requireAuth } from '../middleware/auth'
 import { tripAccess } from '../middleware/tripAccess'
-import { validateBody, validateObjectIdParam, validateQuery } from '../middleware/validate'
+import { validateBody, validateDocumentIdParam, validateQuery } from '../middleware/validate'
 import { asyncHandler } from '../utils/asyncHandler'
 import { expenseCreateSchema, expenseUpdateSchema } from '../validators/expense'
 import { z } from 'zod'
@@ -14,7 +14,7 @@ tripExpenseRoutes.post('/', validateBody(expenseCreateSchema), asyncHandler(expe
 
 const expenseRoutes = Router()
 expenseRoutes.use(requireAuth)
-expenseRoutes.get('/:expenseId', validateObjectIdParam('expenseId'), asyncHandler(expenseController.get))
-expenseRoutes.put('/:expenseId', validateObjectIdParam('expenseId'), validateBody(expenseUpdateSchema), asyncHandler(expenseController.update))
-expenseRoutes.delete('/:expenseId', validateObjectIdParam('expenseId'), asyncHandler(expenseController.remove))
+expenseRoutes.get('/:expenseId', validateDocumentIdParam('expenseId'), asyncHandler(expenseController.get))
+expenseRoutes.put('/:expenseId', validateDocumentIdParam('expenseId'), validateBody(expenseUpdateSchema), asyncHandler(expenseController.update))
+expenseRoutes.delete('/:expenseId', validateDocumentIdParam('expenseId'), asyncHandler(expenseController.remove))
 export default expenseRoutes

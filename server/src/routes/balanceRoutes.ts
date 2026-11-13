@@ -3,7 +3,7 @@ import * as balanceController from '../controllers/balanceController'
 import { requireAuth } from '../middleware/auth'
 import { tripAccess } from '../middleware/tripAccess'
 import { asyncHandler } from '../utils/asyncHandler'
-import { validateObjectIdParam } from '../middleware/validate'
+import { validateDocumentIdParam } from '../middleware/validate'
 
 export const tripBalanceRoutes = Router({ mergeParams: true })
 tripBalanceRoutes.use(requireAuth, tripAccess)
@@ -14,5 +14,5 @@ tripSettlementRoutes.use(requireAuth, tripAccess)
 tripSettlementRoutes.get('/', asyncHandler(balanceController.settlements))
 
 const settlementRoutes = Router()
-settlementRoutes.post('/:settlementId/settle', requireAuth, validateObjectIdParam('settlementId'), asyncHandler(balanceController.markSettled))
+settlementRoutes.post('/:settlementId/settle', requireAuth, validateDocumentIdParam('settlementId'), asyncHandler(balanceController.markSettled))
 export default settlementRoutes

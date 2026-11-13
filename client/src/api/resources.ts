@@ -34,7 +34,7 @@ export const api = {
     list: async (id: string, category = 'all') => (await http.get<{ data: { expenses: Expense[] } }>(`/trips/${id}/expenses`, { params: category !== 'all' ? { category } : {} })).data.data.expenses,
     get: async (id: string) => (await http.get<{ data: { expense: Expense } }>(`/expenses/${id}`)).data.data.expense,
     create: async (id: string, payload: Record<string, unknown>) => (await http.post<{ data: { expense: Expense } }>(`/trips/${id}/expenses`, payload)).data.data.expense,
-    update: async (id: string, payload: Record<string, unknown>) => http.put(`/expenses/${id}`, payload),
+    update: async (id: string, payload: Record<string, unknown>) => (await http.put<{ data: { expense: Expense } }>(`/expenses/${id}`, payload)).data.data.expense,
     remove: async (id: string) => http.delete(`/expenses/${id}`),
   },
   balance: {

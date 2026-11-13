@@ -67,21 +67,69 @@ export function ExpensesPage() {
   const [failure, setFailure] = useState('')
   const [retry, setRetry] = useState(0)
 
-  const load = async () => {
+  useEffect(() => {
+    let active = true
     setLoading(true)
-    try {
-      const [details, items, people] = await Promise.all([api.trips.get(tripId), api.expenses.list(tripId, category), api.travelers.list(tripId)])
-      setTrip(details.trip); setExpenses(items); setTravelers(people); setFailure('')
-    } catch (error) { setFailure(errorMessage(error)) }
-    finally { setLoading(false) }
-  }
-  useEffect(() => { void load() }, [tripId, category, retry])
+    const load = async () => {
+      try {
+        const [details, items] = await Promise.all([api.trips.get(tripId), api.expenses.list(tripId, category)])
+        if (!active) return
+        setTrip(details.trip)
+        setExpenses(items)
+        setFailure('')
+        void api.travelers.list(tripId).then((people) => {
+          if (active) setTravelers(people)
+        }).catch((error: unknown) => {
+          if (active) notify(errorMessage(error), 'error')
+        })
+      } catch (error) {
+        if (active) setFailure(errorMessage(error))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    void load()
+    return () => { active = false }
+  }, [tripId, category, retry, notify])
+
+  useEffect(() => {
+    let active = true
+    let refreshing = false
+
+    const refreshExpenses = async () => {
+      if (!active || refreshing || document.visibilityState !== 'visible') return
+      refreshing = true
+      try {
+        const items = await api.expenses.list(tripId, category)
+        if (!active) return
+        setExpenses(items)
+        setFailure('')
+      } catch (error) {
+        if (active) setFailure(errorMessage(error))
+      } finally {
+        refreshing = false
+      }
+    }
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshExpenses()
+    }
+    const interval = window.setInterval(() => { void refreshExpenses() }, 5000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    window.addEventListener('focus', refreshWhenVisible)
+
+    return () => {
+      active = false
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.removeEventListener('focus', refreshWhenVisible)
+    }
+  }, [tripId, category])
 
   const visible = useMemo(() => expenses.filter((expense) => expense.description.toLowerCase().includes(search.toLowerCase())), [expenses, search])
   const total = visible.reduce((sum, expense) => sum + expense.amountInTripCurrency, 0)
   const remove = async () => {
     if (!removeTarget) return
-    try { await api.expenses.remove(removeTarget._id); notify('Expense deleted. Balances are updated.'); setActive(null); await load() }
+    try { await api.expenses.remove(removeTarget._id); notify('Expense deleted. Balances are updated.'); setActive(null); setRetry((value) => value + 1) }
     catch (error) { notify(errorMessage(error), 'error') }
     finally { setRemoveTarget(null) }
   }
@@ -89,10 +137,10 @@ export function ExpensesPage() {
   if (loading && !trip) return <LoadingState label="Gathering the trip expenses" />
   if (failure && !trip) return <div className="page-wrap"><ErrorState message={failure} retry={() => setRetry((value) => value + 1)} /></div>
   if (!trip) return null
-  return <div className="expenses-page page-enter"><div className="page-topline"><Link to={`/trips/${tripId}`} className="back-link"><ArrowLeft size={18} /> Trip</Link><span className="page-top-kicker">THE SHARED TAB</span><button className="icon-button" aria-label="Sort expenses" onClick={() => setExpenses((items) => [...items].reverse())}><ArrowDownUp size={18} /></button></div>
+  return <div className="expenses-page page-enter"><div className="page-topline"><Link to={`/trips/${tripId}`} className="back-link"><ArrowLeft size={18} /> Trip</Link><span className="page-top-kicker">{trip.name}</span><button className="icon-button" aria-label="Sort expenses" onClick={() => setExpenses((items) => [...items].reverse())}><ArrowDownUp size={18} /></button></div>
     <header className="page-heading expense-heading"><span className="eyebrow">EVERY LITTLE THING ADDS UP</span><h1>Expenses</h1><p>{formatMoney(total, trip.currency)} <span>across {visible.length} {visible.length === 1 ? 'expense' : 'expenses'}</span></p></header>
     <div className="expense-tools"><div className="filter-chips" role="tablist" aria-label="Expense category">{filterOptions.map(([value, label]) => <button key={value} className={category === value ? 'active' : ''} role="tab" aria-selected={category === value} onClick={() => setCategory(value ?? 'all')}>{label}</button>)}</div><label className="expense-search"><Filter size={16} /><input placeholder="Search expenses" value={search} onChange={(event) => setSearch(event.target.value)} /></label></div>
-    {failure ? <ErrorState message={failure} retry={() => setRetry((value) => value + 1)} /> : loading ? <LoadingState label="Adding up the little things" /> : visible.length ? <div className="expense-list">{visible.map((expense) => <ExpenseRow key={expense._id} expense={expense} trip={trip} onClick={() => setActive(expense)} />)}</div> : <EmptyState title="No expenses just yet" detail="Add the first shared expense and everyone can see their part." action={<Link className="button button-primary" to={`/trips/${tripId}/expenses/new`}><Plus size={17} />Add Expense</Link>} />}
+    {failure ? <ErrorState message={failure} retry={() => setRetry((value) => value + 1)} /> : loading ? <LoadingState label="Adding up the little things" /> : visible.length ? <div className="expense-list">{visible.map((expense) => <ExpenseRow key={expense._id} expense={expense} trip={trip} onClick={() => setActive(expense)} />)}</div> : <EmptyState title={`No expenses for ${trip.name} yet`} detail="Expenses are kept separate for each trip. Check you are viewing the trip where you added the expense." action={<Link className="button button-primary" to={`/trips/${tripId}/expenses/new`}><Plus size={17} />Add Expense</Link>} />}
     <Link className="button button-primary button-wide expense-bottom-add" to={`/trips/${tripId}/expenses/new`}><Plus size={19} />Add Expense</Link>
     {active && <ExpenseDrawer expense={active} trip={trip} travelers={travelers} currentUser={user?.id ?? ''} onClose={() => setActive(null)} onEdit={() => navigate(`/trips/${tripId}/expenses/${active._id}/edit`)} onDelete={() => setRemoveTarget(active)} />}
     {removeTarget && <ConfirmDialog title="Delete this expense?" message="The expense will be removed and suggested settlements will be recalculated." confirmLabel="Delete expense" onClose={() => setRemoveTarget(null)} onConfirm={() => void remove()} />}

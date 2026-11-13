@@ -18,7 +18,7 @@ TripSplit is a travel-planning and expense-sharing app for friends. It keeps tri
 
 - Client: React 18, TypeScript, Vite, React Router 6, Tailwind CSS, Lucide, Axios, React Hook Form, Zod and Recharts.
 - Server: Node.js, Express, TypeScript, Zod, Helmet, CORS, rate limiting, Morgan and Multer.
-- Database: MongoDB and Mongoose.
+- Database: Firebase Cloud Firestore, accessed by the Firebase Admin SDK on the server.
 - Tests: Vitest; Supertest is available for API tests.
 
 ## Project Layout
@@ -32,7 +32,7 @@ docs/         Project documentation and visual references
 ## Requirements
 
 - Node.js 20 or newer and npm.
-- MongoDB 6 or newer, running locally or hosted by MongoDB Atlas.
+- A Firebase project with Firestore enabled and a Firebase Admin SDK service account.
 
 ## Install and Run
 
@@ -42,23 +42,23 @@ docs/         Project documentation and visual references
    npm install
    ```
 
-2. Copy `server/.env.example` to `server/.env` and set `MONGO_URI` and a random `JWT_SECRET` of at least 32 characters. Copy `client/.env.example` to `client/.env` if the API URL differs from its default.
+2. Copy `server/.env.example` to `server/.env`. Configure the Firebase Admin credentials and a random `JWT_SECRET` of at least 32 characters. Copy `client/.env.example` to `client/.env` if the API URL differs from its default.
 
-3. Start MongoDB. A local Docker option is:
+3. In the Firebase console, create or select a project, enable Cloud Firestore in Native mode, then create a service account under Project settings → Service accounts. Add its project ID, client email and private key to `server/.env`. The private key can be stored with `\n` sequences; the backend restores newlines at initialization. Never commit a service-account JSON file or private key.
+
+4. Deploy the compound query indexes:
 
    ```sh
-   docker run --name tripsplit-mongo -p 27017:27017 -d mongo:7
+   firebase deploy --only firestore:indexes
    ```
 
-   For Atlas, create a database user, allow the development IP in Network Access, and set the Atlas connection string as `MONGO_URI`.
-
-4. Seed sample content (this clears and recreates the TripSplit collections):
+5. Seed sample content (this upserts only the `seed-*` documents and does not clear other Firestore data):
 
    ```sh
    npm run seed
    ```
 
-5. Start the API and web app:
+6. Start the API and web app:
 
    ```sh
    npm run dev
@@ -73,12 +73,11 @@ TripSplit can be deployed as one Vercel project: Vite serves the client, and the
 
 Before using the deployment:
 
-1. Use a hosted MongoDB deployment such as MongoDB Atlas; a local MongoDB URL is not reachable from Vercel.
-2. Add `MONGO_URI`, `JWT_SECRET` (at least 32 characters), and `CLIENT_URL` (the deployed app origin) as Vercel environment variables for Production and Preview. Keep these values private and never commit them.
-3. Create a Vercel Blob store and connect it to the Vercel project. The serverless API uses Blob for persistent uploaded images; local development continues to use the local storage provider.
+1. Add `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `JWT_SECRET` (at least 32 characters), and `CLIENT_URL` (the deployed app origin) as Vercel environment variables for Production and Preview. Keep these values private and never commit them.
+2. Create a Vercel Blob store and connect it to the Vercel project. The serverless API uses Blob for persistent uploaded images; local development continues to use the local storage provider.
 4. Deploy. In production, the client defaults to the same-origin `/api` endpoint.
 
-The API opens and reuses a MongoDB connection when handling function requests. Vercel's local function filesystem is temporary, so do not use local uploads for deployed user content.
+The API reuses the Firebase Admin app across function requests. Vercel's local function filesystem is temporary, so do not use local uploads for deployed user content.
 
 ## Environment
 
@@ -86,11 +85,13 @@ The API opens and reuses a MongoDB connection when handling function requests. V
 
 | Variable | Purpose |
 | --- | --- |
-| `MONGO_URI` | MongoDB connection string (required) |
 | `JWT_SECRET` | Random signing secret, at least 32 characters (required) |
 | `JWT_EXPIRES_IN` | Token lifetime; defaults to `7d` |
 | `PORT` | API port; defaults to `5000` |
 | `CLIENT_URL` | Allowed browser origin; defaults to `http://localhost:5173` |
+| `FIREBASE_PROJECT_ID` | Firebase project ID (required) |
+| `FIREBASE_CLIENT_EMAIL` | Firebase Admin service account email (required) |
+| `FIREBASE_PRIVATE_KEY` | Firebase Admin private key (required; newline escapes are supported) |
 
 `client/.env`:
 
@@ -99,6 +100,20 @@ The API opens and reuses a MongoDB connection when handling function requests. V
 | `VITE_API_URL` | API base URL; defaults to `http://localhost:5000/api` |
 
 The server validates its required configuration at startup and reports missing or invalid values before accepting requests. Secrets belong only in ignored `.env` files.
+
+## Firestore Collections
+
+The backend uses `users`, `trips`, `travelers`, `activities`, `expenses`, `settlements`, and `photos`. Relationship fields store document IDs as strings; API responses expose Firestore document IDs as `_id` and resolve related user documents where the existing API returned populated objects. `userEmails` and `inviteCodes` are small lookup collections that enforce unique login emails and invitation codes. Compound indexes required by traveler, activity and expense queries are declared in `firestore.indexes.json`.
+
+## Copy Existing MongoDB Data
+
+The optional migration utility is a standalone script at `server/src/scripts/migrateMongoToFirestore.ts`. It copies existing MongoDB collections to Firestore and never deletes or changes the source database. Install the MongoDB Database Tools (`mongoexport`), configure the Firebase variables above with `FIREBASE_PROJECT_ID=tripsplit-a75e7`, and provide the old connection string only for this one-time command. The script refuses to run if another Firebase project is configured.
+
+```sh
+MONGO_URI="mongodb://..." npm run migrate:mongodb
+```
+
+In PowerShell, set `$env:MONGO_URI="mongodb://127.0.0.1:27017/tripsplit"`, run `npm run migrate:mongodb`, then remove it with `Remove-Item Env:MONGO_URI`. The script copies users, trips, memberships, activities, expenses, settlements and photos; preserves document IDs, password fields, dates, preferences, and string relationships; creates missing lookup indexes without replacing existing ones; and never overwrites existing Firestore documents. It reports source and destination collection counts plus inserted, already-present, and failed record counts. Failure logs include only the collection, record number and a generic reason, not document data, IDs or error details. Review the counts and verify the app before retiring MongoDB. The migration is not run automatically and does not delete MongoDB data.
 
 ## API Overview
 
@@ -136,7 +151,7 @@ All sample accounts use password `Password123!`:
 - `aisha@tripsplit.dev`
 - `riya@tripsplit.dev`
 
-Seed data includes Bali Besties (₹21,600 total), Goa Weekend, five Bali itinerary days, locally generated covers/avatars/photos, and expenses using equal, percentage, exact and custom splits.
+Seed data includes Bali Besties (₹21,600 total), Goa Weekend, sample itinerary entries, locally generated covers/avatars/photos, and expenses using equal, percentage, exact and custom splits.
 
 ## Checks
 
@@ -149,9 +164,10 @@ For direct TypeScript checks: `cd server && npx tsc --noEmit`; for client source
 
 ## Troubleshooting
 
-- **MongoDB connection fails:** Check `MONGO_URI`, confirm the database is running, and verify Atlas network access and credentials.
+- **Firestore connection fails:** Check the Firebase project ID, service-account email/private key, Firestore API enablement and project permissions. The private key must include its BEGIN/END lines; literal `\n` sequences are supported.
+- **A Firestore query asks for an index:** Deploy `firestore.indexes.json` with `firebase deploy --only firestore:indexes`.
 - **CORS error:** Set `CLIENT_URL` to the exact browser origin, including scheme and port, then restart the API.
 - **Port already in use:** Set `PORT` for the server. Vite chooses another available port when 5173 is occupied.
 - **Upload fails:** The API accepts JPG, PNG and WebP images up to 5 MB. Ensure `server/uploads` is writable.
 - **JWT configuration error:** Set a random `JWT_SECRET` with at least 32 characters. Existing browser sessions can be cleared by logging in again.
-- **Seed command reconnects slowly:** Confirm MongoDB is reachable before running `npm run seed`.
+- **Seed command fails:** Confirm the Firebase service-account variables are valid and Firestore is enabled for the project.

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import * as activityController from '../controllers/activityController'
 import { requireAuth } from '../middleware/auth'
 import { tripAccess } from '../middleware/tripAccess'
-import { validateBody, validateObjectIdParam, validateQuery } from '../middleware/validate'
+import { validateBody, validateDocumentIdParam, validateQuery } from '../middleware/validate'
 import { asyncHandler } from '../utils/asyncHandler'
 import { activityCreateSchema, activityUpdateSchema } from '../validators/activity'
 import { z } from 'zod'
@@ -14,6 +14,6 @@ tripActivityRoutes.post('/', validateBody(activityCreateSchema), asyncHandler(ac
 
 const activityRoutes = Router()
 activityRoutes.use(requireAuth)
-activityRoutes.put('/:activityId', validateObjectIdParam('activityId'), validateBody(activityUpdateSchema), asyncHandler(activityController.update))
-activityRoutes.delete('/:activityId', validateObjectIdParam('activityId'), asyncHandler(activityController.remove))
+activityRoutes.put('/:activityId', validateDocumentIdParam('activityId'), validateBody(activityUpdateSchema), asyncHandler(activityController.update))
+activityRoutes.delete('/:activityId', validateDocumentIdParam('activityId'), asyncHandler(activityController.remove))
 export default activityRoutes

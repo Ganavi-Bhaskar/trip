@@ -1,27 +1,30 @@
-import { Expense } from '../models/Expense'
-import { Membership } from '../models/Membership'
-import { Settlement } from '../models/Settlement'
-import { User } from '../models/User'
-import { Trip } from '../models/Trip'
+import { getDb } from '../config/firebase'
+import { queryRecords, userWithId } from '../utils/firestore'
 import { computeBalances, minimizeTransactions } from './balanceService'
 
+interface ExpenseRecord { _id: string; trip: string; paidBy: string; amountInTripCurrency: number; computedShares: Array<{ user: string; amount: number }> }
+interface SettlementRecord { _id: string; trip: string; from: string; to: string; amount: number; status: 'pending' | 'settled' }
+interface MembershipRecord { _id: string; user: string; trip: string }
+
 export async function getTripBalance(tripId: string) {
-  const [trip, expenses, settled, pending, memberships] = await Promise.all([
-    Trip.findById(tripId).select('currency'),
-    Expense.find({ trip: tripId }).select('paidBy amountInTripCurrency computedShares').lean(),
-    Settlement.find({ trip: tripId, status: 'settled' }).select('from to amount').lean(),
-    Settlement.find({ trip: tripId, status: 'pending' }).select('from to amount status').lean(),
-    Membership.find({ trip: tripId }).select('user').lean(),
+  const database = getDb()
+  const [trip, expenses, settlements, memberships] = await Promise.all([
+    database.collection('trips').doc(tripId).get(),
+    queryRecords<ExpenseRecord>(database.collection('expenses').where('trip', '==', tripId)),
+    queryRecords<SettlementRecord>(database.collection('settlements').where('trip', '==', tripId)),
+    queryRecords<MembershipRecord>(database.collection('travelers').where('trip', '==', tripId)),
   ])
-  const memberIds = memberships.map((membership) => String(membership.user))
+  const memberIds = memberships.map((membership) => membership.user)
+  const settled = settlements.filter((entry) => entry.status === 'settled')
+  const pending = settlements.filter((entry) => entry.status === 'pending')
   const balances = computeBalances(expenses, settled, memberIds)
-  const users = await User.find({ _id: { $in: memberIds } }).select('name avatar').lean()
-  const userById = new Map(users.map((user) => [String(user._id), user]))
+  const users = await Promise.all(memberIds.map(async (id) => [id, await userWithId(id)] as const))
+  const userById = new Map(users)
   const suggestions = minimizeTransactions(balances)
   const suggestedSettlements = suggestions.map((suggestion) => {
-    const persisted = pending.find((entry) => String(entry.from) === suggestion.from && String(entry.to) === suggestion.to && entry.amount === suggestion.amount)
+    const persisted = pending.find((entry) => entry.from === suggestion.from && entry.to === suggestion.to && entry.amount === suggestion.amount)
     return {
-      id: persisted ? String(persisted._id) : '',
+      id: persisted?._id ?? '',
       amount: suggestion.amount,
       from: publicUser(userById.get(suggestion.from), suggestion.from),
       to: publicUser(userById.get(suggestion.to), suggestion.to),
@@ -30,14 +33,14 @@ export async function getTripBalance(tripId: string) {
   })
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amountInTripCurrency, 0)
   return {
-    currency: trip?.currency ?? 'INR',
+    currency: trip.data()?.currency ?? 'INR',
     totalExpenses,
     balances: balances.map((balance) => ({ ...balance, user: publicUser(userById.get(balance.user), balance.user), status: balance.net > 0 ? 'gets back' : balance.net < 0 ? 'owes' : 'settled' })),
     suggestedSettlements,
-    settlements: pending.map((settlement) => ({ ...settlement, id: String(settlement._id) })),
+    settlements: pending.map((settlement) => ({ ...settlement, id: settlement._id })),
   }
 }
 
-function publicUser(user: { _id: unknown; name: string; avatar?: string } | undefined, id: string) {
+function publicUser(user: { _id: string; name: string; avatar?: string } | null | undefined, id: string) {
   return { id, name: user?.name ?? 'Traveler', avatar: user?.avatar ?? '' }
 }
